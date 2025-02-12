@@ -16,12 +16,6 @@ app.use(express.json()); // Parses JSON request body
 // Email API Route
 app.post("/send-emails", async (req, res) => {
   try {
-    const { to, subject, text } = req.body;
-
-    if (!to || !subject || !text) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
     const msg = req.body;
 
     await sgMail.send(msg);
