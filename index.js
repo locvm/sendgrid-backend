@@ -1,33 +1,26 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const sgMail = require("@sendgrid/mail");
 
 const app = express();
 const PORT = process.env.PORT || 5500;
-
-// Set SendGrid API Key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Import Routes
+const emailRoute = require("./routes/emailRoute");
+const tokenRoute = require("./routes/tokenRoute");
 
 // Middleware
-app.use(cors()); // Allows frontend requests
-app.use(express.json()); // Parses JSON request body
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Allow frontend origin
+    credentials: true, // Allow cookies & authentication headers
+  })
+);
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-// Email API Route
-app.post("/send-emails", async (req, res) => {
-  try {
-    const msg = req.body;
-
-    await sgMail.send(msg);
-    res.status(200).json({ message: "Email sent successfully!" });
-  } catch (error) {
-    console.error("Error sending email:", error.response?.body || error);
-    res.status(500).json({
-      error: "Error sending email",
-      details: error.response?.body || error.message,
-    });
-  }
-});
+// Use Routes
+app.use("/send-emails", emailRoute);
+app.use(tokenRoute);
 
 // Start Server
 app.listen(PORT, () => {
