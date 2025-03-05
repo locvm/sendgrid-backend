@@ -11,10 +11,14 @@ const tokenRoute = require("./routes/tokenRoute");
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow frontend origin
+    origin: [
+      "http://localhost:3000",
+      "https://vercel.com/eve-s-projects-fe714c49/sendgrid-backend/9nMUUtsu8cGQS5RTdghM2yenB4PU",
+    ], // Allow frontend origin
     credentials: true, // Allow cookies & authentication headers
   })
 );
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
