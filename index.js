@@ -1,13 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const sgMail = require("@sendgrid/mail");
+const fetch = require("node-fetch");
 
 const app = express();
 const PORT = process.env.PORT || 5500;
-
-// Set SendGrid API Key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Middleware
 app.use(cors()); // Allows frontend requests
@@ -15,17 +12,43 @@ app.use(express.json()); // Parses JSON request body
 
 // Email API Route
 app.post("/send-emails", async (req, res) => {
-  try {
-    const msg = req.body;
+  const { to, subject, html, text } = req.body;
 
-    await sgMail.send(msg);
-    res.status(200).json({ message: "Email sent successfully!" });
-  } catch (error) {
-    console.error("Error sending email:", error.response?.body || error);
-    res.status(500).json({
-      error: "Error sending email",
-      details: error.response?.body || error.message,
+  try {
+    const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "LOCVM",
+          email: "communications@locvm.ca",
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
     });
+
+    const data = await brevoRes.json();
+
+    if (!brevoRes.ok) {
+      console.error("Brevo error response:", data);
+      return res.status(brevoRes.status).json({
+        error: "Brevo error",
+        details: data,
+      });
+    }
+
+    res.status(200).json({ message: "Email sent successfully!", data });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 });
 
