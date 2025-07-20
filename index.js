@@ -12,7 +12,8 @@ app.use(express.json()); // Parses JSON request body
 
 // Email API Route
 app.post("/send-emails", async (req, res) => {
-  const { to, subject, html, text } = req.body;
+  // console.log("req.body", req.body);
+  const { to, subject, templateId, params } = req.body;
 
   try {
     const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -22,14 +23,20 @@ app.post("/send-emails", async (req, res) => {
         "api-key": process.env.BREVO_API_KEY,
       },
       body: JSON.stringify({
-        sender: {
-          name: "LOCVM",
+        from: {
           email: "communications@locvm.ca",
+          name: "LOCVM Communications",
         },
-        to: [{ email: to }],
+        to: to,
         subject,
-        htmlContent: html,
-        textContent: text,
+        templateId: Number(templateId),
+        params: {
+          firstName: params.firstName,
+          lastName: params.lastName,
+          message: params.message,
+          goodbyeMessage: params.goodbyeMessage,
+          link: params.link,
+        },
       }),
     });
 
