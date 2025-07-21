@@ -1,32 +1,25 @@
-import Cors from "cors";
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const fetch = require("node-fetch");
 
-// Helper to wait for middleware (see https://vercel.com/guides/how-to-enable-cors)
-function initMiddleware(middleware) {
-  return (req, res) =>
-    new Promise((resolve, reject) => {
-      middleware(req, res, (result) =>
-        result instanceof Error ? reject(result) : resolve(result)
-      );
-    });
-}
+const app = express();
+const PORT = process.env.PORT || 5500;
 
-const cors = initMiddleware(
-  Cors({
-    origin: "https://www.locvm.ca",
-    methods: ["POST", "OPTIONS"],
+// Middleware
+app.use(
+  cors({
+    origin: ["https://www.locvm.ca", "http://localhost:3000"], // Frontend origins
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
   })
 );
 
-export default async function handler(req, res) {
-  await cors(req, res);
+app.use(express.json()); // Parses JSON request body
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
-
+// Email API Route
+app.post("/send-emails", async (req, res) => {
+  // console.log("req.body", req.body);
   const { to, subject, templateId, params } = req.body;
 
   try {
@@ -57,15 +50,23 @@ export default async function handler(req, res) {
     const data = await brevoRes.json();
 
     if (!brevoRes.ok) {
-      return res
-        .status(brevoRes.status)
-        .json({ error: "Brevo error", details: data });
+      console.error("Brevo error response:", data);
+      return res.status(brevoRes.status).json({
+        error: "Brevo error",
+        details: data,
+      });
     }
 
-    return res.status(200).json({ message: "Email sent successfully!", data });
+    res.status(200).json({ message: "Email sent successfully!", data });
   } catch (error) {
-    return res
+    console.error("Error sending email:", error);
+    res
       .status(500)
       .json({ error: "Internal Server Error", details: error.message });
   }
-}
+});
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
