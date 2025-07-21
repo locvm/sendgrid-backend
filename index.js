@@ -8,9 +8,8 @@ const PORT = process.env.PORT || 5500;
 
 // Middleware
 
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Parses JSON request body
-app.use(cors({ origin: ["https://www.locvm.ca/"] }));
+app.use(cors({ origin: "https://www.locvm.ca" }));
 
 // Email API Route
 app.post("/send-emails", async (req, res) => {
