@@ -16,6 +16,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+app.options("/send-emails", cors(corsOptions), (req, res) => {
+  res.sendStatus(200);
+});
+
 // Email API Route
 app.post("/send-emails", async (req, res) => {
   // console.log("req.body", req.body);
