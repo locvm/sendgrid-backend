@@ -1,12 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
-
 const app = express();
 const PORT = process.env.PORT || 5500;
 
-// Middleware
+app.use(express.json());
 app.use(
   cors({
     origin: ["https://www.locvm.ca", "http://localhost:3000"], // Frontend origins
@@ -14,8 +12,6 @@ app.use(
     allowedHeaders: ["Content-Type"],
   })
 );
-
-app.use(express.json()); // Parses JSON request body
 
 // Email API Route
 app.post("/send-emails", async (req, res) => {
