@@ -7,7 +7,14 @@ const app = express();
 const PORT = process.env.PORT || 5500;
 
 // Middleware
-app.use(cors()); // Allows frontend requests
+app.use(
+  cors({
+    origin: "https://www.locvm.ca",
+    methods: ["POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json()); // Parses JSON request body
 
 // Email API Route
