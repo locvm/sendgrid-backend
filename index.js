@@ -1,18 +1,32 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const fetch = require("node-fetch");
+import Cors from "cors";
 
-const app = express();
-const PORT = process.env.PORT || 5500;
+// Helper to wait for middleware (see https://vercel.com/guides/how-to-enable-cors)
+function initMiddleware(middleware) {
+  return (req, res) =>
+    new Promise((resolve, reject) => {
+      middleware(req, res, (result) =>
+        result instanceof Error ? reject(result) : resolve(result)
+      );
+    });
+}
 
-// Middleware
-app.use(cors()); // Allows frontend requests
-app.use(express.json()); // Parses JSON request body
+const cors = initMiddleware(
+  Cors({
+    origin: "https://www.locvm.ca",
+    methods: ["POST", "OPTIONS"],
+  })
+);
 
-// Email API Route
-app.post("/send-emails", async (req, res) => {
-  // console.log("req.body", req.body);
+export default async function handler(req, res) {
+  await cors(req, res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
+
   const { to, subject, templateId, params } = req.body;
 
   try {
@@ -43,23 +57,15 @@ app.post("/send-emails", async (req, res) => {
     const data = await brevoRes.json();
 
     if (!brevoRes.ok) {
-      console.error("Brevo error response:", data);
-      return res.status(brevoRes.status).json({
-        error: "Brevo error",
-        details: data,
-      });
+      return res
+        .status(brevoRes.status)
+        .json({ error: "Brevo error", details: data });
     }
 
-    res.status(200).json({ message: "Email sent successfully!", data });
+    return res.status(200).json({ message: "Email sent successfully!", data });
   } catch (error) {
-    console.error("Error sending email:", error);
-    res
+    return res
       .status(500)
       .json({ error: "Internal Server Error", details: error.message });
   }
-});
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+}
