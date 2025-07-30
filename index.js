@@ -16,6 +16,13 @@ app.use(
 // Email API Route
 app.post("/send-emails", async (req, res) => {
   // console.log("req.body", req.body);
+
+  const token = req.headers["x-api-token"];
+
+  if (token !== process.env.API_SECRET_TOKEN) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
   const { to, subject, templateId, params, source } = req.body;
 
   if (source) {
