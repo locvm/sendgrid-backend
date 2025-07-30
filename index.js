@@ -16,7 +16,13 @@ app.use(
 // Email API Route
 app.post("/send-emails", async (req, res) => {
   // console.log("req.body", req.body);
-  const { to, subject, templateId, params } = req.body;
+  const { to, subject, templateId, params, source } = req.body;
+
+  if (source) {
+    console.log(`Email request from: ${source}`);
+  } else {
+    console.log(`Email request (no source provided)`);
+  }
 
   try {
     const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -27,7 +33,7 @@ app.post("/send-emails", async (req, res) => {
       },
       body: JSON.stringify({
         from: {
-          email: "communications@locvm.ca",
+          email: "eve@locvm.ca",
           name: "LOCVM Communications",
         },
         to: to,
@@ -46,19 +52,29 @@ app.post("/send-emails", async (req, res) => {
     const data = await brevoRes.json();
 
     if (!brevoRes.ok) {
-      console.error("Brevo error response:", data);
+      console.error(
+        `Brevo error${source ? ` (source: ${source})` : ""}:`,
+        data
+      );
       return res.status(brevoRes.status).json({
         error: "Brevo error",
+        source: source || "unknown",
         details: data,
       });
     }
 
-    res.status(200).json({ message: "Email sent successfully!", data });
+    res.status(200).json({
+      message: "Email sent successfully!",
+      source: source || "unknown",
+      data,
+    });
   } catch (error) {
     console.error("Error sending email:", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    res.status(500).json({
+      error: "Internal Server Error",
+      source: source || "unknown",
+      details: error.message,
+    });
   }
 });
 
