@@ -33,7 +33,7 @@ app.post("/send-emails", async (req, res) => {
       },
       body: JSON.stringify({
         from: {
-          email: "eve@locvm.ca",
+          email: "communications@locvm.ca",
           name: "LOCVM Communications",
         },
         to: to,
