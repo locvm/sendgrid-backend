@@ -19,7 +19,7 @@ app.post("/send-emails", async (req, res) => {
 
   const token = req.headers["x-api-token"];
 
-  if (token !== process.env.API_SECRET_TOKEN) {
+  if (token !== process.env.SEND_EMAIL_API_KEY) {
     return res.status(403).json({ error: "Unauthorized" });
   }
 
@@ -63,6 +63,7 @@ app.post("/send-emails", async (req, res) => {
         `Brevo error${source ? ` (source: ${source})` : ""}:`,
         data
       );
+      MAIL_API_KEY;
       return res.status(brevoRes.status).json({
         error: "Brevo error",
         source: source || "unknown",
