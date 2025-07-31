@@ -85,6 +85,7 @@ app.post("/send-emails", async (req, res) => {
     });
   }
 });
+
 app.get("/", (req, res) => {
   res.send("Email backend is running.");
 });
