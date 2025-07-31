@@ -9,7 +9,7 @@ app.use(
   cors({
     origin: ["https://www.locvm.ca", "http://localhost:3000"], // Frontend origins
     methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "x-api-token"],
   })
 );
 
