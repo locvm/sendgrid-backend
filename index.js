@@ -25,6 +25,18 @@ app.post("/send-emails", async (req, res) => {
 
   const { to, subject, templateId, params, source } = req.body;
 
+  const missing = [];
+  if (!to) missing.push("to");
+  //if (!subject) missing.push("subject");
+  if (!templateId) missing.push("templateId");
+  if (missing.length) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      missing,
+      source: source || "unknown",
+    });
+  }
+
   if (source) {
     console.log(`Email request from: ${source}`);
   } else {
@@ -46,13 +58,7 @@ app.post("/send-emails", async (req, res) => {
         to: to,
         subject,
         templateId: Number(templateId),
-        params: {
-          firstName: params.firstName,
-          lastName: params.lastName,
-          message: params.message,
-          goodbyeMessage: params.goodbyeMessage,
-          link: params.link,
-        },
+        params,
       }),
     });
 
@@ -63,7 +69,6 @@ app.post("/send-emails", async (req, res) => {
         `Brevo error${source ? ` (source: ${source})` : ""}:`,
         data
       );
-      MAIL_API_KEY;
       return res.status(brevoRes.status).json({
         error: "Brevo error",
         source: source || "unknown",
