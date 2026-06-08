@@ -4,6 +4,9 @@ const { Readable, Writable } = require("node:stream");
 
 const { app } = require("../index");
 
+process.env.SEND_EMAIL_API_KEY = "test-token";
+process.env.BREVO_API_KEY = "brevo-test-key";
+
 function createRequest({ method, path, headers = {}, body }) {
   const payload = body ? Buffer.from(body) : null;
   const normalizedHeaders = Object.fromEntries(
@@ -89,4 +92,156 @@ test("GET / returns server status text", async () => {
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body, "Email backend is running.");
+});
+
+test("POST /send-emails returns 403 when API token is invalid", async () => {
+  const response = await invokeApp({
+    method: "POST",
+    path: "/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "wrong-token",
+    },
+    body: JSON.stringify({}),
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.deepEqual(JSON.parse(response.body), { error: "Unauthorized" });
+});
+
+test("POST /send-emails keeps the V1 fixed params contract", async () => {
+  let fetchRequest;
+  global.fetch = async (url, options) => {
+    fetchRequest = { url, options };
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { messageId: "v1-message-id" };
+      },
+    };
+  };
+
+  const response = await invokeApp({
+    method: "POST",
+    path: "/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "test-token",
+    },
+    body: JSON.stringify({
+      to: [{ email: "test@example.com" }],
+      subject: "Hello",
+      templateId: "42",
+      source: "legacy-client",
+      params: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        message: "Hi",
+        goodbyeMessage: "Bye",
+        link: "https://example.com",
+        ignoredField: "should-not-pass",
+      },
+    }),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(fetchRequest.url, "https://api.brevo.com/v3/smtp/email");
+
+  const payload = JSON.parse(fetchRequest.options.body);
+  assert.deepEqual(payload.params, {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    message: "Hi",
+    goodbyeMessage: "Bye",
+    link: "https://example.com",
+  });
+  assert.equal(payload.templateId, 42);
+
+  assert.deepEqual(JSON.parse(response.body), {
+    message: "Email sent successfully!",
+    source: "legacy-client",
+    data: { messageId: "v1-message-id" },
+  });
+});
+
+test("POST /v2/send-emails forwards arbitrary params", async () => {
+  let fetchRequest;
+  global.fetch = async (url, options) => {
+    fetchRequest = { url, options };
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { messageId: "v2-message-id" };
+      },
+    };
+  };
+
+  const response = await invokeApp({
+    method: "POST",
+    path: "/v2/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "test-token",
+    },
+    body: JSON.stringify({
+      to: [{ email: "test@example.com" }],
+      subject: "Hello",
+      templateId: "99",
+      source: "v2-client",
+      params: {
+        doctorName: "Dr. Rivera",
+        bookingLink: "https://example.com/book",
+        customFlag: true,
+      },
+    }),
+  });
+
+  assert.equal(response.statusCode, 200);
+
+  const payload = JSON.parse(fetchRequest.options.body);
+  assert.deepEqual(payload.params, {
+    doctorName: "Dr. Rivera",
+    bookingLink: "https://example.com/book",
+    customFlag: true,
+  });
+  assert.equal(payload.templateId, 99);
+
+  assert.deepEqual(JSON.parse(response.body), {
+    message: "Email sent successfully!",
+    source: "v2-client",
+    data: { messageId: "v2-message-id" },
+  });
+});
+
+test("POST /v2/send-emails returns 400 when required fields are missing", async () => {
+  let fetchCalled = false;
+  global.fetch = async () => {
+    fetchCalled = true;
+    throw new Error("fetch should not be called");
+  };
+
+  const response = await invokeApp({
+    method: "POST",
+    path: "/v2/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "test-token",
+    },
+    body: JSON.stringify({
+      subject: "Hello",
+      params: {
+        anything: "goes",
+      },
+    }),
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(fetchCalled, false);
+  assert.deepEqual(JSON.parse(response.body), {
+    error: "Missing required fields",
+    missing: ["to", "templateId"],
+    source: "unknown",
+  });
 });
