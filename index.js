@@ -24,7 +24,8 @@ app.get("/", (req, res) => {
   res.send("Email backend is running.");
 });
 
-module.exports = { app };
+module.exports = app;
+module.exports.app = app;
 
 if (require.main === module) {
   app.listen(PORT, () => {
