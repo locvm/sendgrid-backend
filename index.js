@@ -64,7 +64,6 @@ app.post("/send-emails", async (req, res) => {
         `Brevo error${source ? ` (source: ${source})` : ""}:`,
         data
       );
-      MAIL_API_KEY;
       return res.status(brevoRes.status).json({
         error: "Brevo error",
         source: source || "unknown",
@@ -91,7 +90,8 @@ app.get("/", (req, res) => {
   res.send("Email backend is running.");
 });
 
-module.exports = { app };
+module.exports = app;
+module.exports.app = app;
 
 if (require.main === module) {
   app.listen(PORT, () => {

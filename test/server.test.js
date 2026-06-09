@@ -4,6 +4,9 @@ const { Readable, Writable } = require("node:stream");
 
 const { app } = require("../index");
 
+process.env.SEND_EMAIL_API_KEY = "test-token";
+process.env.BREVO_API_KEY = "brevo-test-key";
+
 function createRequest({ method, path, headers = {}, body }) {
   const payload = body ? Buffer.from(body) : null;
   const normalizedHeaders = Object.fromEntries(
@@ -89,4 +92,43 @@ test("GET / returns server status text", async () => {
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body, "Email backend is running.");
+});
+
+test("POST /send-emails returns Brevo errors without crashing the handler", async () => {
+  global.fetch = async () => ({
+    ok: false,
+    status: 401,
+    async json() {
+      return { message: "invalid api key" };
+    },
+  });
+
+  const response = await invokeApp({
+    method: "POST",
+    path: "/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "test-token",
+    },
+    body: JSON.stringify({
+      to: [{ email: "test@example.com" }],
+      subject: "Hello",
+      templateId: "42",
+      params: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        message: "Hi",
+        goodbyeMessage: "Bye",
+        link: "https://example.com",
+      },
+      source: "test-suite",
+    }),
+  });
+
+  assert.equal(response.statusCode, 401);
+  assert.deepEqual(JSON.parse(response.body), {
+    error: "Brevo error",
+    source: "test-suite",
+    details: { message: "invalid api key" },
+  });
 });
