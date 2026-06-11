@@ -109,6 +109,45 @@ test("POST /send-emails returns 403 when API token is invalid", async () => {
   assert.deepEqual(JSON.parse(response.body), { error: "Unauthorized" });
 });
 
+test("POST /send-emails returns Brevo errors without crashing the handler", async () => {
+  global.fetch = async () => ({
+    ok: false,
+    status: 401,
+    async json() {
+      return { message: "invalid api key" };
+    },
+  });
+
+  const response = await invokeApp({
+    method: "POST",
+    path: "/send-emails",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-token": "test-token",
+    },
+    body: JSON.stringify({
+      to: [{ email: "test@example.com" }],
+      subject: "Hello",
+      templateId: "42",
+      source: "test-suite",
+      params: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        message: "Hi",
+        goodbyeMessage: "Bye",
+        link: "https://example.com",
+      },
+    }),
+  });
+
+  assert.equal(response.statusCode, 401);
+  assert.deepEqual(JSON.parse(response.body), {
+    error: "Brevo error",
+    source: "test-suite",
+    details: { message: "invalid api key" },
+  });
+});
+
 test("POST /send-emails keeps the V1 fixed params contract", async () => {
   let fetchRequest;
   global.fetch = async (url, options) => {

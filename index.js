@@ -2,7 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const { sendV1Email, sendV2Email } = require("./src/controllers/emailController");
+const {
+  sendV1Email,
+  sendV2Email,
+} = require("./src/controllers/emailController");
 const { authenticateRequest } = require("./src/middleware/authenticateRequest");
 
 const app = express();
@@ -14,9 +17,10 @@ app.use(
     origin: ["https://www.locvm.ca", "http://localhost:3000"],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "x-api-token"],
-  })
+  }),
 );
 
+// Email API Routes
 app.post("/send-emails", authenticateRequest, sendV1Email);
 app.post("/v2/send-emails", authenticateRequest, sendV2Email);
 
