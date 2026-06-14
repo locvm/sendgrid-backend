@@ -20,16 +20,17 @@ app.use(
   }),
 );
 
-app.use((req, res) => {
-  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
-});
-
 // Email API Routes
 app.post("/send-emails", authenticateRequest, sendV1Email);
 app.post("/v2/send-emails", authenticateRequest, sendV2Email);
 
 app.get("/", (req, res) => {
   res.send("Email backend is running.");
+});
+
+// 404 handler — must remain last
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
 });
 
 module.exports = app;
