@@ -28,6 +28,11 @@ app.get("/", (req, res) => {
   res.send("Email backend is running.");
 });
 
+// 404 handler — must remain last
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+});
+
 module.exports = app;
 module.exports.app = app;
 
