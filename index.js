@@ -28,6 +28,10 @@ app.get("/", (req, res) => {
   res.send("Email backend is running.");
 });
 
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+});
+
 module.exports = app;
 module.exports.app = app;
 
